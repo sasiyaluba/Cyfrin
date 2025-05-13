@@ -19,9 +19,11 @@ contract SantaToken is ERC20 {
     }
 
     function mint(address to) external {
+        // @audit: 可以抽象为modifier
         if (msg.sender != i_santasList) {
             revert SantaToken__NotSantasList();
         }
+        // @audit: magic number
         _mint(to, 1e18);
     }
 
@@ -29,6 +31,7 @@ contract SantaToken is ERC20 {
         if (msg.sender != i_santasList) {
             revert SantaToken__NotSantasList();
         }
+        // @audit: magic number
         _burn(from, 1e18);
     }
 }

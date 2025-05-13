@@ -66,6 +66,8 @@ contract SantasList is ERC721, TokenUri {
     /*//////////////////////////////////////////////////////////////
                                  TYPES
     //////////////////////////////////////////////////////////////*/
+
+    // @audit: 枚举的第一个默认值为0，而后顺序相加，这意味着任何用户都至少是NICE
     enum Status {
         NICE,
         EXTRA_NICE,
@@ -78,6 +80,7 @@ contract SantasList is ERC721, TokenUri {
     //////////////////////////////////////////////////////////////*/
     mapping(address person => Status naughtyOrNice) private s_theListCheckedOnce;
     mapping(address person => Status naughtyOrNice) private s_theListCheckedTwice;
+
     address private immutable i_santa;
     uint256 private s_tokenCounter;
     SantaToken private immutable i_santaToken;
@@ -118,7 +121,10 @@ contract SantasList is ERC721, TokenUri {
      * @param person The person to check
      * @param status The status of the person
      */
+
+    // @audit 缺少owner访问控制
     function checkList(address person, Status status) external {
+        // @audit: 没有时间限制，导致即使在圣诞节之后，依然可以调用该函数通过check
         s_theListCheckedOnce[person] = status;
         emit CheckedOnce(person, status);
     }
@@ -131,6 +137,7 @@ contract SantasList is ERC721, TokenUri {
      * @param status The status of the person
      */
     function checkTwice(address person, Status status) external onlySanta {
+        // @audit: 没有时间限制，导致即使在圣诞节之后，依然可以调用该函数通过check
         if (s_theListCheckedOnce[person] != status) {
             revert SantasList__SecondCheckDoesntMatchFirst();
         }
@@ -145,12 +152,18 @@ contract SantasList is ERC721, TokenUri {
      * This should not be callable until Christmas 2023 (give or take 24 hours), and addresses should not be able to collect more than once.
      */
     function collectPresent() external {
+        // @audit: 仅有开始时间限制，未有停止时间限制，readme中说明了有24小时的collect时间
         if (block.timestamp < CHRISTMAS_2023_BLOCK_TIME) {
             revert SantasList__NotChristmasYet();
         }
+
+        // @ audit: user可以通过将自身的nft转移到其他地址，从而多次提取奖励
         if (balanceOf(msg.sender) > 0) {
             revert SantasList__AlreadyCollected();
         }
+
+        // @audit: 缺少事件释放
+
         if (s_theListCheckedOnce[msg.sender] == Status.NICE && s_theListCheckedTwice[msg.sender] == Status.NICE) {
             _mintAndIncrement();
             return;
@@ -170,8 +183,12 @@ contract SantasList is ERC721, TokenUri {
      * @dev You'll first need to approve the SantasList contract to spend your SantaTokens.
      */
     function buyPresent(address presentReceiver) external {
+        // @audit 只需要1e18 token就可以铸造nft
+        // @audit 结合ERC721重入，可以任意燃烧地址的token，并为自己铸造nft
+        // @audit: 应该燃烧msg.sender的token，而不是presentReceiver的token，应该为presentReceiver铸造nft
         i_santaToken.burn(presentReceiver);
         _mintAndIncrement();
+        // @audit: 缺少事件释放
     }
 
     /*//////////////////////////////////////////////////////////////

@@ -12,6 +12,7 @@ contract SantasListTest is Test {
 
     address user = makeAddr("user");
     address santa = makeAddr("santa");
+    address constant HEVM_ADDRESS = address(bytes20(uint160(uint256(keccak256("hevm cheat code")))));
     _CheatCodes cheatCodes = _CheatCodes(HEVM_ADDRESS);
 
     function setUp() public {

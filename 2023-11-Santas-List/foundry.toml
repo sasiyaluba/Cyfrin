@@ -5,6 +5,7 @@ libs = ["lib"]
 remappings = [
     '@openzeppelin/contracts=lib/openzeppelin-contracts/contracts',
     '@solmate=lib/solmate-bad',
+    "forge-std=lib/forge-std/src",
 ]
 ffi = true
 evm_version = "paris"
